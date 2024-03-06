@@ -1,17 +1,16 @@
-#include <iostream>
-#include "instruction.h"
+#include "headers/simulation.h"
 
 using namespace std;
 
 int main(){
 
-    string binary;
+    string instructionFilePath;
+    cout << "Enter filepath: ";
+    cin >> instructionFilePath;
+    cout << "Running " << instructionFilePath << "..." << endl;
 
-    cout << "Enter an instruction: ";
-    cin >> binary;
-    
-    Instruction myInstruction(binary);
-    myInstruction.printInfo();
+    Simulation simulation = Simulation(instructionFilePath);
+    simulation.run();
 
     return 0;
 }
