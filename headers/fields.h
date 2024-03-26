@@ -15,6 +15,8 @@ public:
         Prints the values of each child class's field, plus operation and instruction type.
         Abstract method in Field class. */
     virtual void printInfo() = 0;
+    virtual bool isLW(){ return false; }
+    virtual int getALUOP() = 0;
 
 protected:
 
@@ -142,6 +144,10 @@ public:
 
     }
 
+    int getALUOP(){
+        return 2;
+    }
+
     /* == printInfo ==
         Prints the values of each R-Type field, plus operation and instruction type.*/
     void printInfo(){
@@ -243,6 +249,14 @@ public:
             std::cout << "WARNING: Invalid opcode field: " << opcode << ". Something went wrong" << std::endl;
         }
     }
+    
+    int getALUOP(){
+        return 2; //Not defined in the slides, but this is a problem we discussed in a previous homework. Assumed to be 2 (10 binary).
+    }
+
+    bool isLW(){
+        return (operation == "lw" || operation == "lh" || operation == "lb") ? true : false;
+    }
 
     /* == printInfo ==
         Prints the values of each R-Type field, plus operation and instruction type.*/
@@ -302,6 +316,10 @@ public:
                 break;
         }
 
+    }
+
+    int getALUOP(){
+        return 0;
     }
 
     /* == printInfo ==
@@ -366,6 +384,10 @@ public:
 
     }
 
+    int getALUOP(){
+        return 1;
+    }
+
     /* == printInfo ==
         Prints the values of each SB-Type field, plus operation and instruction type.*/
     void printInfo(){
@@ -407,6 +429,10 @@ public:
         imm *= 2; //The extra zero applies here too.
 
         operation = "jal"; //There's only one!
+    }
+
+    int getALUOP(){
+        return 0; //JAL adds the offset to the address of the instruction, so it should always add.
     }
 
     /* == printInfo ==
