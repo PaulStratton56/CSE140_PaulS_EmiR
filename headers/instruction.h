@@ -4,6 +4,16 @@
 #include <cmath>
 #include "fields.h"
 
+enum InstructionType{
+    R,
+    I,
+    S,
+    SB,
+    U,
+    UJ,
+    END
+};
+
 class Instruction{
 public:
     Instruction(std::string Binary){     //Constructor
@@ -14,19 +24,25 @@ public:
         switch(getOpcode()){
             case(51):
                 info = new RField(binary);
+                type = R;
                 break;
             case(19):
+            case(3):
             case(103):
                 info = new IField(binary);
+                type = I;
                 break;
             case(35):
                 info = new SField(binary);
+                type = S;
                 break;
             case(99):
                 info = new SBField(binary);
+                type = SB;
                 break;
             case(111):
                 info = new UJField(binary);
+                type = UJ;
                 break;
             default:
                 std::cout << "Not a valid use case!" << std::endl;
@@ -34,6 +50,8 @@ public:
         }
         return;
     }
+
+    Instruction(const Instruction& otherInstruction) : Instruction(otherInstruction.binaryText) {}
 
     ~Instruction(){                 //Destructor
         delete info;
@@ -43,10 +61,23 @@ public:
         info->printInfo();
     }
 
+    InstructionType getType(){
+        return type;
+    }
+
+    bool isLW(){
+        return info->isLW();
+    }
+
+    int getALUOP(){
+        return info->getALUOP();
+    }
+
 private:
     std::string binaryText;              //Given binaryText
     std::vector<int> binary;             //Make binary std::vector with 32 ints
     Field* info;                    //Input Field
+    InstructionType type;
 
     std::vector<int> processBinaryText(){       //Convert binaryText to binary
         std::vector<int> ans;
@@ -76,8 +107,6 @@ private:
         }
         return result;
     }
-
-    std::string type;    //Type of Field
 };
 
 #endif
