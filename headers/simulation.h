@@ -20,7 +20,6 @@ public:
         d_mem = new DataMemory(MEMORY_SIZE);
         rf = new RegisterFile(MEMORY_SIZE);
         CU = new ControlUnit();
-        CU->printSignals();
         this->instructionFilePath = instructionFilePath;
     }
 

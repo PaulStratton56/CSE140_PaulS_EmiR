@@ -15,7 +15,14 @@ public:
         Prints the values of each child class's field, plus operation and instruction type.
         Abstract method in Field class. */
     virtual void printInfo() = 0;
+    /* == isLW ==
+        Returns whether the given instruction is a LW instruction.
+        Overriden ONLY by the I-Type field. */
     virtual bool isLW(){ return false; }
+    /* == getALUOP ==
+        Returns a 2b integer specifying the ALUOP for the control signal.
+        Note these are inferred for some instructions.
+        Abstract method in Field class. */
     virtual int getALUOP() = 0;
 
 protected:
@@ -144,6 +151,9 @@ public:
 
     }
 
+    /* == getALUOP ==
+        For R-Type instructions, the ALUOP is always 10 in binary.
+        The ALU operation is determined by the Funct3/Funct7 fields. */
     int getALUOP(){
         return 2;
     }
@@ -250,10 +260,15 @@ public:
         }
     }
     
+    /* == getALUOP ==
+        For I-Type instructions, we assume the value to be 2, as I-Type instructions must cover a range of ALU operations.
+        This could be incorrect, but is a "best guess" for now. */
     int getALUOP(){
-        return 2; //Not defined in the slides, but this is a problem we discussed in a previous homework. Assumed to be 2 (10 binary).
+        return 2;
     }
 
+    /* == isLW ==
+        Returns true if this I-Type instruction is a "load" instruction, and false otherwise. */
     bool isLW(){
         return (operation == "lw" || operation == "lh" || operation == "lb") ? true : false;
     }
@@ -318,6 +333,8 @@ public:
 
     }
 
+    /* == getALUOP ==
+        For S-Type instructions, the ALUOP is always 0 in binary. */
     int getALUOP(){
         return 0;
     }
@@ -384,6 +401,8 @@ public:
 
     }
 
+    /* == getALUOP ==
+        For SB-Type instructions, the ALUOP is always 1. */
     int getALUOP(){
         return 1;
     }
@@ -431,6 +450,9 @@ public:
         operation = "jal"; //There's only one!
     }
 
+    /* == getALUOP ==
+        For UJ-Type instructions, we assume the ALU serves the purpose of adding the offset to its address.
+        Because of this, it makes sense to have the ALUOP be 0, as it always results in the ALU performing addition. */
     int getALUOP(){
         return 0; //JAL adds the offset to the address of the instruction, so it should always add.
     }
