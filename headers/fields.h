@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <map>
+#include "ALUCtrlValue.h"
 
 /* == Field ==
     Abstract class all field classes derive from.
@@ -15,6 +17,10 @@ public:
         Prints the values of each child class's field, plus operation and instruction type.
         Abstract method in Field class. */
     virtual void printInfo() = 0;
+    /* == info ==
+        Returns a "dict" of all relevant information (registers, etc).
+        Note the keys will change depending on the instruction type. */
+    virtual std::map<std::string, int> info() = 0;
     /* == isLW ==
         Returns whether the given instruction is a LW instruction.
         Overriden ONLY by the I-Type field. */
@@ -24,6 +30,7 @@ public:
         Note these are inferred for some instructions.
         Abstract method in Field class. */
     virtual int getALUOP() = 0;
+
 
 protected:
 
@@ -158,6 +165,16 @@ public:
         return 2;
     }
 
+    std::map<std::string, int> info(){
+        std::map<std::string, int> info;
+        info["rs1"] = rs1;
+        info["rs2"] = rs2;
+        info["rd"] = rd;
+        info["func3"] = func3;
+        info["func7"] = func7;
+        return info;
+    }
+
     /* == printInfo ==
         Prints the values of each R-Type field, plus operation and instruction type.*/
     void printInfo(){
@@ -202,26 +219,33 @@ public:
             switch(func3){
                 case(0): //addi (op: 0010011 func3: 000)
                     operation = "addi";
+                    ALUCtrl = ADD;
                     break;
                 case(1): //slli (op: 0010011 func3: 001)
                     operation = "slli";
+                    ALUCtrl = SLL;
                     break;
                 case(2): //slti (op: 0010011 func3: 010)
                     operation = "slti";
+                    ALUCtrl = SLT;
                     break;
                 case(3): //sltiu(op: 0010011 func3: 011)
                     operation = "sltiu";
+                    ALUCtrl = SLT;
                     imm = binToInt(binaryCode, {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30}, false); //reassign because not signed
                     break;
                 case(4): //xori (op: 0010011 func3: 100)
                     operation = "xori";
+                    ALUCtrl = XOR;
                     break;
                 case(5): //Either srai or srli
                     if(binToInt(binaryCode, {30}) == 1){ //srai (op: 0010011 func3: 101 (func7: 0100000))
                         operation = "srai";
+                        ALUCtrl = SRA;
                     }
                     else if(binToInt(binaryCode, {30}) == 0){ //srli (op: 0010011 func3: 101 (func7: 0000000))
                         operation = "srli";
+                        ALUCtrl = SRL;
                     }
                     else{
                         std::cout << "WARNING: non-binary func7 field. Something went HORRIBLY wrong." << std::endl;
@@ -229,9 +253,11 @@ public:
                     break;
                 case(6): //ori  (op: 0010011 func3: 110)
                     operation = "ori";
+                    ALUCtrl = OR;
                     break;
                 case(7): //andi (op: 0010011 func3: 111)
                     operation = "andi";
+                    ALUCtrl = AND;
                     break;
             }
         }
@@ -239,12 +265,15 @@ public:
             switch(func3){
                 case(0): //lb   (op: 0000011 func3: 000)
                     operation = "lb";
+                    ALUCtrl = ADD;
                     break;
                 case(1): //lh   (op: 0000011 func3: 001)
                     operation = "lh";
+                    ALUCtrl = ADD;
                     break;
                 case(2): //lw   (op: 0000011 func3: 010)
                     operation = "lw";
+                    ALUCtrl = ADD;
                     break;
             }
         }
@@ -252,6 +281,7 @@ public:
             switch(func3){
                 case(0): //jalr (op: 1100111 func3: 000)
                     operation = "jalr";
+                    ALUCtrl = ADD;
                     break;
             }
         }
@@ -271,6 +301,17 @@ public:
         Returns true if this I-Type instruction is a "load" instruction, and false otherwise. */
     bool isLW(){
         return (operation == "lw" || operation == "lh" || operation == "lb") ? true : false;
+    }
+
+    std::map<std::string, int> info(){
+        std::map<std::string, int> info;
+        info["rs1"] = rs1;
+        info["rd"] = rd;
+        info["imm"] = imm;
+        info["func3"] = func3;
+        info["opcode"] = opcode;
+        info["ALUCtrl"] = ALUCtrl;
+        return info;
     }
 
     /* == printInfo ==
@@ -293,6 +334,7 @@ public:
 private:
     std::string operation;
     int rs1, rd, imm, func3, opcode;
+    ALUCtrlValue ALUCtrl;
 
 };
 
@@ -337,6 +379,15 @@ public:
         For S-Type instructions, the ALUOP is always 0 in binary. */
     int getALUOP(){
         return 0;
+    }
+
+    std::map<std::string, int> info(){
+        std::map<std::string, int> info;
+        info["rs1"] = rs1;
+        info["rs2"] = rs2;
+        info["imm"] = imm;
+        info["func3"] = func3;
+        return info;
     }
 
     /* == printInfo ==
@@ -407,6 +458,15 @@ public:
         return 1;
     }
 
+    std::map<std::string, int> info(){
+        std::map<std::string, int> info;
+        info["rs1"] = rs1;
+        info["rs2"] = rs2;
+        info["imm"] = imm;
+        info["func3"] = func3;
+        return info;
+    }
+
     /* == printInfo ==
         Prints the values of each SB-Type field, plus operation and instruction type.*/
     void printInfo(){
@@ -469,6 +529,13 @@ public:
         else{
             std::cout << "imm: " << imm << std::endl;
         }
+    }
+
+    std::map<std::string, int> info(){
+        std::map<std::string, int> info;
+        info["rd"] = rd;
+        info["imm"] = imm;
+        return info;
     }
 
     ~UJField(){}
