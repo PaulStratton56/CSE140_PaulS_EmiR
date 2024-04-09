@@ -4,8 +4,11 @@
 #include "memory.h"
 #include "instruction.h"
 #include "controlUnit.h"
+#include "line.h"
 #include <string>   
 #include <iostream>
+#include <fstream>
+#include <vector>
 
 class Simulation{
     DataMemory* d_mem;
@@ -13,6 +16,8 @@ class Simulation{
     ControlUnit* CU;
     std::string instructionFilePath;
     const int MEMORY_SIZE = 32;
+    Line* start;     //Array list of strings
+    std::vector<Line*> texts;
     int pc = 0;
 
 public:
@@ -21,6 +26,10 @@ public:
         rf = new RegisterFile(MEMORY_SIZE);
         CU = new ControlUnit();
         this->instructionFilePath = instructionFilePath;
+
+        fillFile();
+        std::cout << "Ran fillFile()" << std::endl;
+
     }
 
     void run(){
@@ -43,9 +52,18 @@ public:
 
 private:
 
+    // std::string fetch(int pc){
+    //     std::cout << "Fetching!" << std::endl;
+    //     return "00000000010001010010000110000011";
+    // }
+
+    /*
+    PROBLEM:
+
+    */
     std::string fetch(int pc){
         std::cout << "Fetching!" << std::endl;
-        return "00000000010001010010000110000011";
+        return texts[pc]->value;
     }
 
     Instruction decode(std::string instructionBinary){
@@ -56,6 +74,8 @@ private:
 
     void execute(Instruction instruction){
         std::cout << "Executing!" << std::endl;
+        int alu_ctrl = instruction.getALUOP();
+        
     }
 
     void memory(Instruction instruction){
@@ -69,6 +89,34 @@ private:
     /* ===================== */
     /* DEBUG FUNCTIONS BELOW */
     /* ===================== */
+
+    void fillFile(){
+        std::ifstream MyFile;
+        MyFile.open(instructionFilePath);
+        std::string line;
+        int pcNum = 0;
+
+        while(getline(MyFile, line)){
+            texts[pcNum] = new Line(line);
+            std::cout << line << std::endl;
+            std::cout << texts[pcNum]->getValue() << std::endl;
+            pcNum = pcNum +4;
+        }
+
+        MyFile.close();
+
+    }
+
+    // // Go to line 
+    // Line* goToLine(int n){
+    //     Line* ans = texts;
+
+    //     while(ans->pc_num != n){
+    //         ans = ans->next;
+    //     }
+
+    //     return ans;
+    // }
 
     void printData(){
         std::cout << "=== Register File ===" << std::endl;
