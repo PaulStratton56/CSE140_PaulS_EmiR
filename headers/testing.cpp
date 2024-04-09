@@ -10,7 +10,7 @@ int main(){
     //vector<int> myvector = {1,2,3};
 
     std::ifstream MyFile;
-    MyFile.open("sample_part1.txt");
+    MyFile.open("../instructionFiles/sample_part1.txt");
     string line;
 
     if(MyFile.is_open()){

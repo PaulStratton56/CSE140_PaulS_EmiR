@@ -25,11 +25,9 @@ public:
         d_mem = new DataMemory(MEMORY_SIZE);
         rf = new RegisterFile(MEMORY_SIZE);
         CU = new ControlUnit();
-        this->instructionFilePath = instructionFilePath;
+        this->instructionFilePath = "instructionFiles/" + instructionFilePath;
 
         fillFile();
-        std::cout << "Ran fillFile()" << std::endl;
-
     }
 
     void run(){
@@ -92,19 +90,22 @@ private:
 
     void fillFile(){
         std::ifstream MyFile;
-        MyFile.open(instructionFilePath);
+        std::cout << "Filepath: " + instructionFilePath << std::endl;
+        MyFile.open(instructionFilePath);        
         std::string line;
         int pcNum = 0;
 
+        if (!MyFile.is_open()) {
+            std::cerr << "Failed to open the file." << std::endl;
+        }
+
         while(getline(MyFile, line)){
-            texts[pcNum] = new Line(line);
-            std::cout << line << std::endl;
-            std::cout << texts[pcNum]->getValue() << std::endl;
+            texts.push_back(new Line(line));
+            std::cout << texts[pcNum/4]->getValue() << std::endl;
             pcNum = pcNum +4;
         }
 
         MyFile.close();
-
     }
 
     // // Go to line 
