@@ -81,7 +81,7 @@ public:
                 controlSignals[MemWrite] = 0; //I-Types DO NOT write to memory.
                 controlSignals[MemtoReg] = instruction.isLW() ? 1 : 0; //I-Types use memory values IF it is a "load" instruction.
                 controlSignals[MemRead]  = instruction.isLW() ? 1 : 0; //I-Types read from memory IF it is a "load" instruction.
-                ALUOP = instruction.getALUOP(); //I-Types are assumed to use an ALUOP of 2.
+                ALUOP = instruction.isLW() ? 0 : instruction.getALUOP(); //I-Types are assumed to use an ALUOP of 2, unless it's a "load" instruction.
                 break;
             case(S):
                 controlSignals[RegWrite] = 0; //S-Types DO NOT writeback.
@@ -116,6 +116,13 @@ public:
         };
     }
 
+    bool getSignal(Signal signal){
+        return controlSignals[signal];
+    }
+
+    int getALUOP(){
+        return ALUOP;
+    }
     
     /* == printSignals() ==
         Prints all relevant signals from the Control Unit. */

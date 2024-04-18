@@ -61,6 +61,10 @@ public:
         info->printInfo();
     }
 
+    std::map<std::string, int> fieldData(){
+        return info->info();
+    }
+
     InstructionType getType(){
         return type;
     }
