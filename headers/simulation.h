@@ -5,6 +5,7 @@
 #include "instruction.h"
 #include "controlUnit.h"
 #include "ALUCtrlValue.h"
+#include "line.h"
 #include <string>   
 #include <iostream>
 
@@ -17,28 +18,63 @@ class Simulation{
     int pc;
     int ALUZero;
     int branchAddress;
+    int total_clock_cycles = 0;
+    std::vector<Line*> texts;
+    int ALUResult;  // Execute Result for ALU
+    int ReadData;   // Memory Result for Read Data
 
 public:
     Simulation(std::string instructionFilePath){
         d_mem = new DataMemory(MEMORY_SIZE);
+        // Initialize d_mem
+        /*
+        0x70 = 0x5
+        0x74 = 0x10
+        */
         rf = new RegisterFile(MEMORY_SIZE);
+        // Initialized Values
+        /*
+        x1 = 0x20
+        x2 = 0x5
+        x10 = 0x70
+        x11 = 0x4
+        */
         CU = new ControlUnit();
-        this->instructionFilePath = instructionFilePath;
+        this->instructionFilePath = "instructionFiles/" + instructionFilePath;
         pc = 0;
         ALUZero = 0;
         branchAddress = 0;
+
+        fillFile();
     }
 
     void run(){
-        std::string instructionBinary = fetch(pc);
+        /*
+        Change to make it look like the proper outcome
+        ex:
+        total_clock_cycle = # :
+        x3 is modified to 0x10  // Execute
+        pc is modified to 0x4   // 
+        */
 
-        Instruction decodedInstruction = decode(instructionBinary);
+        for(int i = 0; i < texts.size(); i++){
+            std::cout << "total_clock_cycles " << total_clock_cycles << " :" << std::endl;
+            
+            std::string instructionBinary = fetch(total_clock_cycles);
+            std::cout << instructionBinary << std::endl;
+            
+            Instruction decodedInstruction = decode(instructionBinary);
 
-        int ALUResult = execute(decodedInstruction);
+            ALUResult = execute(decodedInstruction);
 
-        memory(decodedInstruction);
+            ReadData = memory(decodedInstruction);
 
-        writeback(decodedInstruction);
+            writeback(decodedInstruction);
+        }
+
+        std::cout << "total_clock_cycles " << total_clock_cycles << " :" << std::endl;
+        std::cout << "END" << std::endl;
+            
     }
 
     ~Simulation(){
@@ -51,7 +87,11 @@ private:
 
     std::string fetch(int pc){
         std::cout << "Fetching!" << std::endl;
-        return "00000000001100101000001010110011";
+
+        std::string result = texts[pc]->value;
+        pc = pc +1; // Change this to pc + 4 and make it so that everything works with it
+
+        return result;
     }
 
     Instruction decode(std::string instructionBinary){
@@ -113,12 +153,37 @@ private:
         return result;
     }
 
-    void memory(Instruction instruction){
+    int memory(Instruction instruction){
         std::cout << "Memory-ing!" << std::endl;
+        /* == Memory Access ==
+        
+        */
+        if(CU->getSignal(MemRead)){
+            // LW
+            return d_mem->getData(ALUResult);
+        }else if(CU->getSignal(MemWrite)){
+            // SW
+            d_mem->setData(ALUResult, rf->getData(instruction.fieldData()["rs2"]));
+        }
+        // Does nothing for R-Type and Branch
+        return 0;
     }
 
     void writeback(Instruction instruction){
         std::cout << "Writing!" << std::endl;
+        /* == Write Back ==
+        */
+        if(CU->getSignal(RegWrite)){
+            if(CU->getSignal(MemtoReg)){
+                // Lw : Mem address
+                rf->setData(instruction.fieldData()["rd"], ReadData);
+            }else{
+                //R-type : ALU address
+                rf->setData(instruction.fieldData()["rd"], ALUResult);
+            }
+        }
+        // Does nothing for SW and Branch
+        total_clock_cycles += 1;
     }
 
     ALUCtrlValue getALUCtrl(Instruction instruction){
@@ -159,6 +224,26 @@ private:
     /* ===================== */
     /* DEBUG FUNCTIONS BELOW */
     /* ===================== */
+
+    void fillFile(){
+        std::ifstream MyFile;
+        std::cout << "Filepath: " + instructionFilePath << std::endl;
+        MyFile.open(instructionFilePath);        
+        std::string line;
+        int pcNum = 0;
+
+        if (!MyFile.is_open()) {
+            std::cerr << "Failed to open the file." << std::endl;
+        }
+
+        while(getline(MyFile, line)){
+            texts.push_back(new Line(line));
+            std::cout << texts[pcNum/4]->getValue() << std::endl;
+            pcNum = pcNum +4;
+        }
+
+        MyFile.close();
+    }
 
     void printData(){
         std::cout << "=== Register File ===" << std::endl;
