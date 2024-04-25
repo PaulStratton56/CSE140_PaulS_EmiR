@@ -14,6 +14,7 @@ enum Signal{
     MemRead,
     End
 };
+
 std::vector<std::string> signalNames = {"RegWrite", "Branch", "ALUSrc", "MemWrite", "MemToReg", "MemRead"};
 
 /* == ControlUnit ==

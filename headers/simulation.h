@@ -19,7 +19,7 @@ class Simulation{
     int ALUZero;
     int branchAddress;
     int total_clock_cycles = 0;
-    std::vector<Line*> texts;
+    std::vector<Line*> instructions;
     int ALUResult;  // Execute Result for ALU
     int ReadData;   // Memory Result for Read Data
 
@@ -57,11 +57,10 @@ public:
         pc is modified to 0x4   // 
         */
 
-        for(int i = 0; i < texts.size(); i++){
+        for(int i = 0; i < instructions.size(); i++){
             std::cout << "total_clock_cycles " << total_clock_cycles << " :" << std::endl;
             
             std::string instructionBinary = fetch(total_clock_cycles);
-            std::cout << instructionBinary << std::endl;
             
             Instruction decodedInstruction = decode(instructionBinary);
 
@@ -86,9 +85,8 @@ public:
 private:
 
     std::string fetch(int pc){
-        std::cout << "Fetching!" << std::endl;
 
-        std::string result = texts[pc]->value;
+        std::string result = instructions[pc]->value;
         pc = pc +1; // Change this to pc + 4 and make it so that everything works with it
 
         return result;
@@ -154,7 +152,6 @@ private:
     }
 
     int memory(Instruction instruction){
-        std::cout << "Memory-ing!" << std::endl;
         /* == Memory Access ==
         
         */
@@ -170,7 +167,6 @@ private:
     }
 
     void writeback(Instruction instruction){
-        std::cout << "Writing!" << std::endl;
         /* == Write Back ==
         */
         if(CU->getSignal(RegWrite)){
@@ -227,7 +223,6 @@ private:
 
     void fillFile(){
         std::ifstream MyFile;
-        std::cout << "Filepath: " + instructionFilePath << std::endl;
         MyFile.open(instructionFilePath);        
         std::string line;
         int pcNum = 0;
@@ -237,8 +232,14 @@ private:
         }
 
         while(getline(MyFile, line)){
-            texts.push_back(new Line(line));
-            std::cout << texts[pcNum/4]->getValue() << std::endl;
+
+            //Check if the string has whitespace..
+            if(line.find_first_not_of("01") != std::string::npos){
+                std::cout << "Irrelevant characters found. Trimming." << std::endl;
+                line = line.substr(line.find_first_of("01"),32);
+            }
+
+            instructions.push_back(new Line(line));
             pcNum = pcNum +4;
         }
 

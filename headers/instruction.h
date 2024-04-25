@@ -15,6 +15,11 @@ enum InstructionType{
 };
 
 class Instruction{
+    std::string binaryText;              //Given binaryText
+    std::vector<int> binary;             //Make binary std::vector with 32 ints
+    Field* info;                    //Input Field
+    InstructionType type;
+
 public:
     Instruction(std::string Binary){     //Constructor
         binaryText = Binary;
@@ -78,11 +83,6 @@ public:
     }
 
 private:
-    std::string binaryText;              //Given binaryText
-    std::vector<int> binary;             //Make binary std::vector with 32 ints
-    Field* info;                    //Input Field
-    InstructionType type;
-
     std::vector<int> processBinaryText(){       //Convert binaryText to binary
         std::vector<int> ans;
         for(int i = 0; i < binaryText.length(); i++){
