@@ -505,7 +505,6 @@ public:
     UJField(std::vector<int> binaryCode){
         rd = binToInt(binaryCode, {7, 8, 9, 10, 11});
         imm= binToInt(binaryCode, {21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 20, 12, 13, 14, 15, 16, 17, 18, 19, 31}); //Ew!
-        imm *= 2; //The extra zero applies here too.
 
         operation = "jal"; //There's only one!
     }

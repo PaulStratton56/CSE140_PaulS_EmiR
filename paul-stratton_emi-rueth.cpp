@@ -5,9 +5,9 @@ using namespace std;
 int main(){
 
     string instructionFilePath;
-    cout << "Enter filepath: ";
+    cout << "Enter the program file name to run:" << endl << endl;
     cin >> instructionFilePath;
-    cout << "Running " << instructionFilePath << "..." << endl;
+    cout << endl;
 
     Simulation simulation = Simulation(instructionFilePath);
     simulation.run();
