@@ -11,41 +11,38 @@
 
 
 class Simulation{
-    bool DEBUG = true;
+    bool DEBUG = false;
+
+    const int MEMORY_SIZE = 32; // Must be even.
     DataMemory* d_mem;
     RegisterFile* rf;
     ControlUnit* CU;
-    std::string instructionFilePath;
-    const int MEMORY_SIZE = 32; //Must be an even number.
+
+    std::string instructionFile;
+
     int pc;
     int ALUZero;
     int branchAddress;
-    int total_clock_cycles = 1;
+    int total_clock_cycles;
     std::vector<Line*> instructions;
-    int ALUResult;  // Execute Result for ALU
-    int ReadData;   // Memory Result for Read Data
+    int ALUResult;
+    int ReadData;
 
 public:
-    Simulation(std::string instructionFilePath){
+    Simulation(std::string givenInstructionFile){
         d_mem = new DataMemory(MEMORY_SIZE);
-
-        if(instructionFilePath == "sample_part1.txt"){
-            d_mem->setData(hexToDec("0x70")/4,hexToDec("0x5"));
-            d_mem->setData(hexToDec("0x74")/4,hexToDec("0x10"));
-        }
-        else if (instructionFilePath == "sample_part2.txt"){
-            // Do nothing, all 0!
-        }
-        
         rf = new RegisterFile(MEMORY_SIZE);
 
-        if(instructionFilePath == "sample_part1.txt"){
+        if(givenInstructionFile == "sample_part1.txt"){
+            d_mem->setData(hexToDec("0x70")/4,hexToDec("0x5"));
+            d_mem->setData(hexToDec("0x74")/4,hexToDec("0x10"));
+
             rf->setData(1,hexToDec("0x20"));
             rf->setData(2,hexToDec("0x5"));
             rf->setData(10,hexToDec("0x70"));
             rf->setData(11,hexToDec("0x4"));
         }
-        else if (instructionFilePath == "sample_part2.txt"){
+        else if (givenInstructionFile == "sample_part2.txt"){
             rf->setData(s0,hexToDec("0x20"));
             rf->setData(a0,hexToDec("0x05"));
             rf->setData(a1,hexToDec("0x2"));
@@ -53,28 +50,20 @@ public:
             rf->setData(a3,hexToDec("0xf"));
         }
         
-
         CU = new ControlUnit();
-        this->instructionFilePath = "instructionFiles/" + instructionFilePath;
         pc = 0;
         ALUZero = 0;
         branchAddress = 0;
+        total_clock_cycles = 1;
 
-        fillFile();
+        instructionFile = "instructionFiles/" + givenInstructionFile;
+        readInstructionsFromFile();
     }
 
     void run(){
-        /*
-        Change to make it look like the proper outcome
-        ex:
-        total_clock_cycle = # :
-        x3 is modified to 0x10  // Execute
-        pc is modified to 0x4   // 
-        */
 
         while(pc < instructions.size() * 4){
             std::cout << "total_clock_cycles " << total_clock_cycles << " :" << std::endl;
-
             std::string instructionBinary = fetch(pc);
             
             Instruction decodedInstruction = decode(instructionBinary);
@@ -85,7 +74,7 @@ public:
 
             writeback(decodedInstruction);
             
-            std::cout << "pc is modified to 0x" << std::hex << pc << std::endl << std::endl;
+            std::cout << "pc is modified to 0x" << std::hex << pc << std::dec << std::endl << std::endl;
         }
 
         std::cout << "program terminated:" << std::endl << "total execution time is " << total_clock_cycles-1 << " cycles" << std::endl;
@@ -101,11 +90,8 @@ public:
 private:
 
     std::string fetch(int instructionAddress){
-
-        std::string result = instructions[(int)(instructionAddress/4)]->value;
-        pc += 4; 
-
-        return result;
+        pc += 4;
+        return getInstruction(instructionAddress);
     }
 
     Instruction decode(std::string instructionBinary){
@@ -121,90 +107,150 @@ private:
         return decodedInstruction;
     }
 
+    //Note to self: JAL and JALR BOTH use the ALU to compute the target address.
     int execute(Instruction instruction){
-        int src1 = (instruction.getType() == UJ) ? pc : rf->getData(instruction.fieldData()["rs1"]);
-        int src2 = (CU->getSignal(ALUSrc) == 1) ? instruction.fieldData()["imm"] : rf->getData(instruction.fieldData()["rs2"]);
-        ALUCtrlValue ALUCtrl = getALUCtrl(instruction);
-        int result = 0;
-        switch(ALUCtrl){
-            case(ADD):
-                if(DEBUG){std::cout << "Performing ADD on " << ((instruction.getType() == UJ) ? "PC" : "rs1") << " and " << ((CU->getSignal(ALUSrc)) ? "imm" : "rs2") << std::endl;}
-                result = src1 + src2;
-                break;
-            case(SUB):
-                if(DEBUG){std::cout << "Performing SUB on " << ((instruction.getType() == UJ) ? "PC" : "rs1") << " and " << ((CU->getSignal(ALUSrc)) ? "imm" : "rs2") << std::endl;}
-                result = src1 - src2;
-                break;
-            case(AND):
-                if(DEBUG){std::cout << "Performing AND on " << ((instruction.getType() == UJ) ? "PC" : "rs1") << " and " << ((CU->getSignal(ALUSrc)) ? "imm" : "rs2") << std::endl;}
-                result = src1 & src2;
-                break;
-            case(OR):
-                if(DEBUG){std::cout << "Performing OR on " << ((instruction.getType() == UJ) ? "PC" : "rs1") << " and " << ((CU->getSignal(ALUSrc)) ? "imm" : "rs2") << std::endl;}
-                result = src1 | src2;
-                break;
-            case(SLL):
-                if(DEBUG){std::cout << "Performing SLL on " << ((instruction.getType() == UJ) ? "PC" : "rs1") << " and " << ((CU->getSignal(ALUSrc)) ? "imm" : "rs2") << std::endl;}
-                result = src1 << src2;
-                break;
-            case(SRL):
-                if(DEBUG){std::cout << "Performing SRL on " << ((instruction.getType() == UJ) ? "PC" : "rs1") << " and " << ((CU->getSignal(ALUSrc)) ? "imm" : "rs2") << std::endl;}
-                result = (src1 >> src2) & ((int)pow(2, 32-src2) - 1); //Masks it with a bunch of zeroes at the beginning for logical shifting. Hooray!
-                break;
-            case(SRA):
-                if(DEBUG){std::cout << "Performing SRA on " << ((instruction.getType() == UJ) ? "PC" : "rs1") << " and " << ((CU->getSignal(ALUSrc)) ? "imm" : "rs2") << std::endl;}
-                result = src1 >> src2; //C++ does natural arithmetic shifting with >>.
-                break;
-            case(XOR):
-                if(DEBUG){std::cout << "Performing XOR on " << ((instruction.getType() == UJ) ? "PC" : "rs1") << " and " << ((CU->getSignal(ALUSrc)) ? "imm" : "rs2") << std::endl;}
-                result = src1 ^ src2;
-                break;
-            case(SLT):
-                if(DEBUG){std::cout << "Performing SLT on " << ((instruction.getType() == UJ) ? "PC" : "rs1") << " and " << ((CU->getSignal(ALUSrc)) ? "imm" : "rs2") << std::endl;}
-                result = (src1 < src2) ? 1 : 0;
-                break;
+        int src1;
+        if(instruction.getType() == UJ){
+            src1 = pc - 4;
+        }
+        else{
+            src1 = getRegisterValue(instruction, "rs1");
         }
 
+        int src2;
+        if(CU->getSignal(ALUSrc) == 1){
+            if(instruction.getType() == UJ){
+                src2 = instruction.fieldData()["imm"] * 2;
+            }
+            else{
+                src2 = instruction.fieldData()["imm"];
+            }
+        }
+        else{
+            src2 = getRegisterValue(instruction, "rs2");
+        }
+
+        ALUCtrlValue ALUCtrl = getALUCtrl(instruction);
+
+        int result = compute(ALUCtrl, src1, src2, instruction);
+        
         ALUZero = (result == 0) ? 1 : 0;
-        if(instruction.fieldData().count("imm") != 0){ //If the instruction has an immediate, use it as a branch address
-            branchAddress = pc + (instruction.fieldData()["imm"] << 1);
+
+        if(instruction.getType() == SB){ 
+            branchAddress = (pc-4) + (instruction.fieldData()["imm"] << 1);
             if(DEBUG){std::cout << "Updated branchTarget to " << branchAddress << std::endl;}
         }
 
         if(DEBUG){std::cout << "ALUResult: " << result << std::endl;}
+
         return result;
     }
 
     int memory(Instruction instruction){
+        //Get the next target for pc.
+        if(ALUZero == 1 && CU->getSignal(Branch) == 1){
+            pc = branchAddress;
+            if(DEBUG){ std::cout << "Updated PC to " << branchAddress << " (branching)." << std::endl;}
+        }
+
         if(CU->getSignal(MemRead) == 1){
             // LW
-            if(DEBUG){std::cout << "Retrieved 0x" << std::hex << d_mem->getData(ALUResult/4) << " from memory." << std::endl;}
+            if(DEBUG){std::cout << "Retrieved 0x" << std::hex << d_mem->getData(ALUResult/4) << std::dec << " from memory." << std::endl;}
             return d_mem->getData(ALUResult/4);
         }else if(CU->getSignal(MemWrite) == 1){
             // SW
             d_mem->setData(ALUResult/4, rf->getData(instruction.fieldData()["rs2"]));
-            std::cout << "memory 0x" << std::hex << ALUResult << " is modified to 0x" << std::hex << rf->getData(instruction.fieldData()["rs2"]) << std::endl;
+            std::cout << "memory 0x" << std::hex << ALUResult << std::dec << " is modified to 0x" << std::hex << rf->getData(instruction.fieldData()["rs2"]) << std::dec << std::endl;
         }
         // Does nothing for R-Type and Branch
         return 0;
     }
 
     void writeback(Instruction instruction){
-        /* == Write Back ==
-        */
         if(CU->getSignal(RegWrite)){
-            if(CU->getSignal(MemtoReg)){
+            if(isJump(instruction)){
+                rf->setData(instruction.fieldData()["rd"], pc); //Set the return address.
+                std::cout << "x" << instruction.fieldData()["rd"] << " is modified to " << "0x" << std::hex << pc << std::dec << std::endl;
+                
+                pc = ALUResult; //Jump to the address computed by the ALU.
+            }else if(CU->getSignal(MemtoReg)){
                 // Lw : Mem address
                 rf->setData(instruction.fieldData()["rd"], ReadData);
-                std::cout << "x" << std::hex << instruction.fieldData()["rd"] << " is modified to " << "0x" << std::hex << ReadData << std::endl;
+                std::cout << "x" << instruction.fieldData()["rd"] << " is modified to " << "0x" << std::hex << ReadData << std::dec << std::endl;
             }else{
                 //R-type : ALU address
                 rf->setData(instruction.fieldData()["rd"], ALUResult);
-                std::cout << "x" << std::hex << instruction.fieldData()["rd"] << " is modified to " << "0x" << std::hex << ALUResult << std::endl;
+                std::cout << "x" << instruction.fieldData()["rd"] << " is modified to " << "0x" << std::hex << ALUResult << std::dec << std::endl;
             }
         }
         // Does nothing for SW and Branch
         total_clock_cycles += 1;
+    }
+
+
+    bool isJump(Instruction instruction){
+        if(instruction.getType() == UJ || (instruction.getType() == I && instruction.fieldData()["opcode"] == 103)){
+            return true;
+        }
+        return false;
+    }
+
+    int getRegisterValue(Instruction instruction, std::string registerName){
+        return rf->getData(instruction.fieldData()[registerName]);
+    }
+
+    int compute(ALUCtrlValue ALUCtrl, int src1, int src2, Instruction instruction){
+        std::string debugOP = "";
+        std::string debugSrc1 = "";
+        std::string debugSrc2 = "";
+        if(instruction.getType() == UJ){ debugSrc1 = "pc"; }
+        else{ debugSrc1 = "rs1"; }
+        if(CU->getSignal(ALUSrc) == 1){ debugSrc2 = "imm"; }
+        else{ debugSrc2 = "rs2"; }
+        
+        int result = 0;
+        switch(ALUCtrl){
+            case(ADD):
+                debugOP = "ADD";
+                result = src1 + src2;
+                break;
+            case(SUB):
+                debugOP = "SUB";
+                result = src1 - src2;
+                break;
+            case(AND):
+                debugOP = "AND";
+                result = src1 & src2;
+                break;
+            case(OR):
+                debugOP = "OR ";
+                result = src1 | src2;
+                break;
+            case(SLL):
+                debugOP = "SLL";
+                result = src1 << src2;
+                break;
+            case(SRL):
+                debugOP = "SRL";
+                result = (src1 >> src2) & ((int)pow(2, 32-src2) - 1); //Masks it with a bunch of zeroes at the beginning for logical shifting. Hooray!
+                break;
+            case(SRA):
+                debugOP = "SRA";
+                result = src1 >> src2; //C++ does natural arithmetic shifting with >>.
+                break;
+            case(XOR):
+                debugOP = "XOR";
+                result = src1 ^ src2;
+                break;
+            case(SLT):
+                debugOP = "SLT";
+                result = (src1 < src2) ? 1 : 0;
+                break;
+        }
+
+        if(DEBUG){ std::cout << "Performing " << debugOP << " on " << debugSrc1 << " and " << debugSrc2 << std::endl; }
+
+        return result;
     }
 
     ALUCtrlValue getALUCtrl(Instruction instruction){
@@ -242,53 +288,6 @@ private:
         return ALUCtrl;
     }
 
-    /* ===================== */
-    /* DEBUG FUNCTIONS BELOW */
-    /* ===================== */
-
-    void fillFile(){
-        std::ifstream MyFile;
-        MyFile.open(instructionFilePath);        
-        std::string line;
-        int pcNum = 0;
-
-        if (!MyFile.is_open()) {
-            std::cerr << "Failed to open the file." << std::endl;
-        }
-
-        while(getline(MyFile, line)){
-
-            //Check if the string has whitespace..
-            if(line.find_first_not_of("01") != std::string::npos){
-                line = line.substr(line.find_first_of("01"),32);
-            }
-
-            instructions.push_back(new Line(line));
-            pcNum = pcNum +4;
-        }
-
-        MyFile.close();
-    }
-
-    void printData(){
-        std::cout << "=== Register File ===" << std::endl;
-        for(int i = 0; i < MEMORY_SIZE/2; i++){
-            std::cout << "x" << i << ": " <<  rf->getData(i) <<  " | x" << i+(MEMORY_SIZE/2) << ": " <<  rf->getData(i+(MEMORY_SIZE/2)) << std::endl;
-        }
-        std::cout << "=== Data Memory ===" << std::endl;
-        for(int i = 0; i < MEMORY_SIZE/2; i++){
-            std::cout << "Mem[" << i << "]: " <<  d_mem->getData(i) << " | Mem[" << i+(MEMORY_SIZE/2) << "]: " <<  d_mem->getData(i+(MEMORY_SIZE/2)) << std::endl;
-        }
-    }
-
-    void setReg(Register reg, int val){
-        rf->setData(reg, val);
-    }
-
-    void setMem(int index, int val){
-        d_mem->setData(index, val);
-    }
-
     int hexToDec(std::string hexValue){
         std::map<char, int> decValue;
         {decValue['0'] = 0;
@@ -314,6 +313,43 @@ private:
             result += decValue[(hexValue[hexValue.length()-1-i])] * pow(16,i);
         }
         return result;
+    }
+
+    void readInstructionsFromFile(){
+        std::ifstream MyFile;
+        MyFile.open(instructionFile);
+
+        if (!MyFile.is_open()) {
+            std::cerr << "Failed to open the file." << std::endl;
+        }
+
+        std::string line;
+        while(getline(MyFile, line)){
+
+            //Trim whitespace
+            if(line.find_first_not_of("01") != std::string::npos){
+                line = line.substr(line.find_first_of("01"),32);
+            }
+
+            instructions.push_back(new Line(line));
+        }
+
+        MyFile.close();
+    }
+
+    std::string getInstruction(int instructionAddress){
+        return (instructions[(int)(instructionAddress/4)])->value;
+    }
+
+    void printData(){
+        std::cout << "=== Register File ===" << std::endl;
+        for(int i = 0; i < MEMORY_SIZE/2; i++){
+            std::cout << "x" << i << ": " <<  rf->getData(i) <<  " | x" << i+(MEMORY_SIZE/2) << ": " <<  rf->getData(i+(MEMORY_SIZE/2)) << std::endl;
+        }
+        std::cout << "=== Data Memory ===" << std::endl;
+        for(int i = 0; i < MEMORY_SIZE/2; i++){
+            std::cout << "Mem[" << i << "]: " <<  d_mem->getData(i) << " | Mem[" << i+(MEMORY_SIZE/2) << "]: " <<  d_mem->getData(i+(MEMORY_SIZE/2)) << std::endl;
+        }
     }
 
 };
