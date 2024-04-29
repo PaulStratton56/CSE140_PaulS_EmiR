@@ -54,7 +54,7 @@ public:
         ex:
         total_clock_cycle = # :
         x3 is modified to 0x10  // Execute
-        pc is modified to 0x4   // 
+        pc is modified to 0x4   // WriteBack
         */
 
         for(int i = 0; i < texts.size(); i++){
@@ -156,7 +156,6 @@ private:
     int memory(Instruction instruction){
         std::cout << "Memory-ing!" << std::endl;
         /* == Memory Access ==
-        
         */
         if(CU->getSignal(MemRead)){
             // LW
