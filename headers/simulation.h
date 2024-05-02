@@ -10,6 +10,10 @@
 #include <iostream>
 
 
+/* == Simulation ==
+    Abstract class for a Single-cycle RISC-V CPU
+    Used to call the Fetch, Decode, Execution, Memory, and WriteBack Components
+*/
 class Simulation{
     bool DEBUG = false;
 
@@ -29,6 +33,11 @@ class Simulation{
     int ReadData;
 
 public:
+    /* == Constructs ==
+        Sets up the Single-cycle RISC-V CPU
+        Initializes Data memory, Regirster File, ControlUnit, PC, ALUZero, branchAddress, Total Clock Cycle, and Instruction File
+        Fills in the Register File with predetermined Memory addresses
+    */
     Simulation(std::string givenInstructionFile){
         d_mem = new DataMemory(MEMORY_SIZE);
         rf = new RegisterFile(MEMORY_SIZE);
@@ -60,6 +69,11 @@ public:
         readInstructionsFromFile();
     }
 
+    /* == run() ==
+        While the instruction size is less than the PC, we will Fetch, Decode, Execute, Memory, and WriteBack 
+        (Depending on the Control Unit)
+        Then decrease the total_clock_cycles by 1
+    */
     void run(){
 
         while(pc < instructions.size() * 4){
@@ -81,6 +95,9 @@ public:
             
     }
 
+    /* == Deconstructor ==
+        Deletes the Data memory, Register File, and Control Unit pointers
+    */
     ~Simulation(){
         delete d_mem;
         delete rf;
@@ -89,11 +106,19 @@ public:
 
 private:
 
+    /* == Fetch ==
+        Gets Instruction from the Instruction Address
+        Adds 4 to PC
+    */
     std::string fetch(int instructionAddress){
         pc += 4;
         return getInstruction(instructionAddress);
     }
 
+    /* == Decode ==
+        Returns decoded Instruction 
+        Sets signals on Control Unit
+    */
     Instruction decode(std::string instructionBinary){
         
         Instruction decodedInstruction(instructionBinary);
@@ -107,6 +132,9 @@ private:
         return decodedInstruction;
     }
 
+    /* == Execute ==
+        Returns retrieved/ computed register values and sign-extended offset values by using ALU 
+    */
     //Note to self: JAL and JALR BOTH use the ALU to compute the target address.
     int execute(Instruction instruction){
         int src1;
@@ -146,6 +174,12 @@ private:
         return result;
     }
 
+    /* == Memory ==
+        Based on the Control Unit, the memory will manipulate the Branch and Data Address
+        If Branch and ALUZero, updates to branch Address
+        If MemRead, returns Data memory
+        If MemWrite, sets Data Memory to Data at Memory Address
+    */
     int memory(Instruction instruction){
         //Get the next target for pc.
         if(ALUZero == 1 && CU->getSignal(Branch) == 1){
@@ -166,6 +200,14 @@ private:
         return 0;
     }
 
+    /* == Writeback ==
+        Writes Data back into the Register if RegWrite is called in the Control Unit
+        If isJump, it will set Rd as PC
+        If MemtoReg, it will set Rd as Read Data
+        Otherwise, it will set Rd as ALUResult
+
+        Add one to the total_clock_cycles
+    */
     void writeback(Instruction instruction){
         if(CU->getSignal(RegWrite)){
             if(isJump(instruction)){
@@ -187,7 +229,9 @@ private:
         total_clock_cycles += 1;
     }
 
-
+    /* == isJump ==
+        Checks if the Instruction type Jumps
+    */
     bool isJump(Instruction instruction){
         if(instruction.getType() == UJ || (instruction.getType() == I && instruction.fieldData()["opcode"] == 103)){
             return true;
@@ -195,10 +239,16 @@ private:
         return false;
     }
 
+    /* == getRegisterValue ==
+        Returns Data at given Register Name
+    */
     int getRegisterValue(Instruction instruction, std::string registerName){
         return rf->getData(instruction.fieldData()[registerName]);
     }
 
+    /* == compute ==
+        Returns result of src1 and src2 based on ALUCtrl
+    */
     int compute(ALUCtrlValue ALUCtrl, int src1, int src2, Instruction instruction){
         std::string debugOP = "";
         std::string debugSrc1 = "";
@@ -253,6 +303,9 @@ private:
         return result;
     }
 
+    /* == ALUCtrl == 
+        Returns ALUCtrl
+    */
     ALUCtrlValue getALUCtrl(Instruction instruction){
         ALUCtrlValue ALUCtrl = NONE;
         switch(CU->getALUOP()){
@@ -288,6 +341,9 @@ private:
         return ALUCtrl;
     }
 
+    /* == hexToDec ==
+        Results decimal value of Hex number
+    */
     int hexToDec(std::string hexValue){
         std::map<char, int> decValue;
         {decValue['0'] = 0;
@@ -315,6 +371,9 @@ private:
         return result;
     }
 
+    /* == readInstructionsFromFile ==
+        Stores each line of file to vector Array for easier access
+    */
     void readInstructionsFromFile(){
         std::ifstream MyFile;
         MyFile.open(instructionFile);
@@ -337,10 +396,16 @@ private:
         MyFile.close();
     }
 
+    /* == getInstruction ==
+        Returns Instruction
+    */
     std::string getInstruction(int instructionAddress){
         return (instructions[(int)(instructionAddress/4)])->value;
     }
 
+    /* == printData ==
+        Prints Register File and Data Memory
+    */
     void printData(){
         std::cout << "=== Register File ===" << std::endl;
         for(int i = 0; i < MEMORY_SIZE/2; i++){

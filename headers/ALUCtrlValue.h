@@ -1,6 +1,9 @@
 #ifndef ALUCTRLVALUE_H
 #define ALUCTRLVALUE_H
 
+/* == ALUCtrlValue ==
+    An enum that sets ALUCtrl will number values
+*/
 enum ALUCtrlValue{
     NONE = -1,
     AND = 0,

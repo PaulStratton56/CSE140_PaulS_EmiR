@@ -4,6 +4,9 @@
 #include <cmath>
 #include "fields.h"
 
+/* == InstructionType ==
+    List of Instruction Types
+*/
 enum InstructionType{
     R,
     I,
@@ -14,6 +17,10 @@ enum InstructionType{
     END
 };
 
+/* == Instruction ==
+    Class for Instruction
+    Sets up binary list as string and integers, info about Field, and Instruction Type
+*/
 class Instruction{
     std::string binaryText;              //Given binaryText
     std::vector<int> binary;             //Make binary std::vector with 32 ints
@@ -21,11 +28,14 @@ class Instruction{
     InstructionType type;
 
 public:
-    Instruction(std::string Binary){     //Constructor
+    /* == Constructor ==
+        Stores binary as text and integer, info, and Instructor type
+        Compares binary's opcode to each Field's opcode (in decimal form).
+    */
+    Instruction(std::string Binary){
         binaryText = Binary;
         binary = processBinaryText();
 
-        /* Compares binary's opcode to each Field's opcode (in decimal form). */
         switch(getOpcode()){
             case(51):
                 info = new RField(binary);
@@ -56,34 +66,58 @@ public:
         return;
     }
 
+    /* == Constructor ==
+        Stores values the same as given otherInstructor
+    */
     Instruction(const Instruction& otherInstruction) : Instruction(otherInstruction.binaryText) {}
 
-    ~Instruction(){                 //Destructor
+    /* == Destructor ==
+        Deletes info pointer
+    */
+    ~Instruction(){
         delete info;
     }
 
-    void printInfo(){               //Printing Information
+    /* == printInfo ==
+        Prints info about Instructor 
+    */
+    void printInfo(){
         info->printInfo();
     }
 
+    /* == fieldData ==
+        Returns info
+    */
     std::map<std::string, int> fieldData(){
         return info->info();
     }
 
+    /* == getType ==
+        Returns Instructor type
+    */
     InstructionType getType(){
         return type;
     }
 
+    /* == isLW ==
+        Returns if Instructor is LW
+    */
     bool isLW(){
         return info->isLW();
     }
 
+    /* == getALUOP ==
+        Retrieves ALUOP
+    */
     int getALUOP(){
         return info->getALUOP();
     }
 
 private:
-    std::vector<int> processBinaryText(){       //Convert binaryText to binary
+    /* == processBinaryText ==
+        Convert binaryText to binary
+    */
+    std::vector<int> processBinaryText(){ 
         std::vector<int> ans;
         for(int i = 0; i < binaryText.length(); i++){
             ans.push_back((int)(binaryText[binaryText.length()-(i+1)])-48);
@@ -92,11 +126,17 @@ private:
         return ans;
     }
 
-    int getOpcode(){                   //Convert the Opcode Binary to Hex
+    /* == getOpcode ==
+        Returns Opcode
+    */
+    int getOpcode(){                   
         int ans = binToInt(binary, {0, 1, 2, 3, 4, 5, 6});
         return ans;
     }
 
+    /* == binToInt ==
+        Convert the Opcode Binary to Hex
+    */
     int binToInt(std::vector<int> binary, std::vector<int> indices = {}){
         int result = 0;
         if(indices.size() == 0){

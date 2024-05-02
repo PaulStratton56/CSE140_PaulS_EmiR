@@ -1,6 +1,9 @@
 #ifndef REGISTERS_H
 #define REGISTERS_H
 
+/* == Register ==
+    Connects the Name to Register
+*/
 enum Register{
     zero = 0,
     ra = 1,
